@@ -1,0 +1,4 @@
+.env
+prime256v1.pem
+prime256v1.public.pem
+node_modules
