@@ -4,7 +4,7 @@ import { BaseAuthApi } from '@dfns/sdk/baseAuthApi'
 import { UserAuthKind } from '@dfns/sdk/codegen/datamodel/Auth'
 import { BlockchainNetwork } from '@dfns/sdk/codegen/datamodel/Foundations'
 import { IdentityKindCustomerFacing } from '@dfns/sdk/codegen/datamodel/Permissions'
-import { TransferKind } from '@dfns/sdk/codegen/datamodel/Wallets'
+import { SignatureKind, TransferKind } from '@dfns/sdk/codegen/datamodel/Wallets'
 import { DfnsDelegatedApiClient } from '@dfns/sdk/dfnsDelegatedApiClient'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
@@ -40,19 +40,6 @@ const delegatedClient = (authToken: string) => {
     baseUrl: DFNS_API_URL!,
   })
 }
-
-;(async () => {
-  try {
-    const recover = await apiClient().auth.createUserRecovery({
-      body: {
-        username: 'sam',
-        orgId: DFNS_ORG_ID!,
-      },
-    })
-  } catch (err) {
-    console.log(err)
-  }
-})()
 
 const auth = (req: Request, res: Response, next: NextFunction) => {
   if (req.cookies.DFNS_AUTH_TOKEN) {
@@ -139,7 +126,15 @@ app.post(
       const permission = await client.permissions.createPermission({
         body: {
           name: `wallets permissions for ${registration.user.id}`,
-          operations: ['Wallets:Create', 'Wallets:Read', 'Wallets:TransferAsset'],
+          operations: [
+            'Wallets:Read',
+            'Wallets:Create',
+            'Wallets:ReadSignature',
+            'Wallets:TransferAsset',
+            'Wallets:ReadTransaction',
+            'Wallets:GenerateSignature',
+            'Wallets:GenerateSignature',
+          ],
         },
       })
 
@@ -283,6 +278,88 @@ app.post(
   '/wallet/recover',
   asyncHandler(async (req: Request, res: Response) => {
     const client = apiClient()
+  })
+)
+
+app.post(
+  '/wallet/sig',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { walletId } = req.body
+    const body = {
+      message: {
+        from: {
+          name: 'Chris',
+          wallet: '0x5be6571d32f30b16015f4ac1434de5ba0a19d15e',
+        },
+        to: {
+          name: 'Bob',
+          wallet: '0xE700b2C6184583c7E8863970Dd128d680F751A09',
+        },
+        contents: 'Hello, Bob!',
+      },
+      types: {
+        Person: [
+          { name: 'name', type: 'string' },
+          { name: 'wallet', type: 'address' },
+        ],
+        Mail: [
+          { name: 'from', type: 'Person' },
+          { name: 'to', type: 'Person' },
+          { name: 'contents', type: 'string' },
+        ],
+      },
+      domain: {
+        name: 'Ether Mail',
+        version: '1',
+        chainId: 1,
+        verifyingContract: '0x1b352de7a926ebd1bf52194dab487c2cb0793a9b',
+        salt: '0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558',
+      },
+    }
+
+    try {
+      const trx = await delegatedClient(req.cookies.DFNS_AUTH_TOKEN).wallets.generateSignatureInit({
+        walletId,
+        body: {
+          kind: SignatureKind.Eip712,
+          types: body.types,
+          domain: body.domain,
+          message: body.message,
+        },
+      })
+      res.send({
+        ...trx,
+        walletId,
+        types: body.types,
+        domain: body.domain,
+        message: body.message,
+      })
+    } catch (err) {
+      console.log(err)
+    }
+  })
+)
+
+app.post(
+  '/wallet/complete',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { signedChallenge, walletId, message, types, domain } = req.body
+
+    const trx = await delegatedClient(req.cookies.DFNS_AUTH_TOKEN).wallets.generateSignatureComplete(
+      {
+        walletId,
+        body: {
+          kind: SignatureKind.Eip712,
+          types,
+          domain,
+          message,
+        },
+      },
+      signedChallenge
+    )
+
+    console.log('ended')
+    res.status(204).end()
   })
 )
 

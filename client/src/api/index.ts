@@ -93,4 +93,21 @@ export const api = {
   async recoverWalletWithUsername(username: string) {
     console.log('hitting')
   },
+
+  async onGenSig() {
+    const { challenge, walletId, allowCredentials, challengeIdentifier, ...data } = await post('/wallet/sig', {
+      walletId: 'wa-5co4s-uub0p-93fadu2i7jrlrkd2',
+    })
+
+    console.log(data)
+
+    const webauthn = new WebAuthn({ rpId: process.env.REACT_APP_DFNS_WEBAUTHN_RPID! })
+    const assertion = await webauthn.sign(challenge, allowCredentials)
+
+    await post('/wallets/sig/complete', {
+      signedChallenge: { challengeIdentifier, firstFactor: assertion },
+      walletId,
+      ...data,
+    })
+  },
 }

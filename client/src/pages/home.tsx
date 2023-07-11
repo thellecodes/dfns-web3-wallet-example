@@ -33,6 +33,10 @@ export default function Home(): JSX.Element {
     api.sendERCToken(toAddress).then((ev: any) => ev)
   }
 
+  const onGenSig = () => {
+    api.onGenSig().then((a) => a)
+  }
+
   return (
     <div>
       <>
@@ -56,7 +60,7 @@ export default function Home(): JSX.Element {
                 <tr key={wallet.id}>
                   <td>{wallet.network}</td>
                   <td>{wallet.address}</td>
-                  {/* <>{wallet.id}</> */}
+                  {/* <>{console.log(wallet.id)}</> */}
                 </tr>
               ))}
           </tbody>
@@ -70,7 +74,7 @@ export default function Home(): JSX.Element {
             </tr>
           </tfoot>
         </table>
-        {walletAssets &&
+        {/* {walletAssets &&
           walletAssets.map((wlt: any, index: number) => (
             <table className="w-full">
               <thead>
@@ -104,7 +108,11 @@ export default function Home(): JSX.Element {
                 </tr>
               </tfoot>
             </table>
-          ))}
+          ))} */}
+
+        <button className="btn" type="submit" style={{ marginLeft: '1rem' }} onClick={onGenSig}>
+          Generate Signature and Send trx
+        </button>
       </>
     </div>
   )
