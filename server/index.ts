@@ -133,7 +133,7 @@ app.post(
             'Wallets:TransferAsset',
             'Wallets:ReadTransaction',
             'Wallets:GenerateSignature',
-            'Wallets:GenerateSignature',
+            'Wallets:BroadcastTransaction',
           ],
         },
       })
@@ -286,17 +286,7 @@ app.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { walletId } = req.body
     const body = {
-      message: {
-        from: {
-          name: 'Chris',
-          wallet: '0x5be6571d32f30b16015f4ac1434de5ba0a19d15e',
-        },
-        to: {
-          name: 'Bob',
-          wallet: '0xE700b2C6184583c7E8863970Dd128d680F751A09',
-        },
-        contents: 'Hello, Bob!',
-      },
+      kind: SignatureKind.Eip712,
       types: {
         Person: [
           { name: 'name', type: 'string' },
@@ -315,6 +305,17 @@ app.post(
         verifyingContract: '0x1b352de7a926ebd1bf52194dab487c2cb0793a9b',
         salt: '0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558',
       },
+      message: {
+        from: {
+          name: 'Chris',
+          wallet: '0x00e3495cf6af59008f22ffaf32d4c92ac33dac47',
+        },
+        to: {
+          name: 'Bob',
+          wallet: '0xcc0ee1a1c5e788b61916c8f1c96c960f9a9d3db7',
+        },
+        contents: 'Hello, Bob!',
+      },
     }
 
     try {
@@ -327,6 +328,7 @@ app.post(
           message: body.message,
         },
       })
+
       res.send({
         ...trx,
         walletId,
@@ -341,7 +343,7 @@ app.post(
 )
 
 app.post(
-  '/wallet/complete',
+  '/wallet/sig/complete',
   asyncHandler(async (req: Request, res: Response) => {
     const { signedChallenge, walletId, message, types, domain } = req.body
 
@@ -358,7 +360,17 @@ app.post(
       signedChallenge
     )
 
-    console.log('ended')
+    const sigs = await delegatedClient(req.cookies.DFNS_AUTH_TOKEN).wallets.getSignature({
+      walletId: 'wa-4a5er-0ue3t-9l28e48vj4p7eklm',
+      signatureId: 'sg-3svsa-0gup4-8gqb58nihr3umpmq',
+    })
+
+    console.log(sigs)
+
+    // const sigs = await delegatedClient(req.cookies.DFNS_AUTH_TOKEN).wallets.listSignatures({
+    // walletId: trx.walletId,
+    // })
+
     res.status(204).end()
   })
 )

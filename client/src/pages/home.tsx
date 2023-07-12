@@ -74,7 +74,7 @@ export default function Home(): JSX.Element {
             </tr>
           </tfoot>
         </table>
-        {/* {walletAssets &&
+        {walletAssets &&
           walletAssets.map((wlt: any, index: number) => (
             <table className="w-full">
               <thead>
@@ -108,7 +108,7 @@ export default function Home(): JSX.Element {
                 </tr>
               </tfoot>
             </table>
-          ))} */}
+          ))}
 
         <button className="btn" type="submit" style={{ marginLeft: '1rem' }} onClick={onGenSig}>
           Generate Signature and Send trx
