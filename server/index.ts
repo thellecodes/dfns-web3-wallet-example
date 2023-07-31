@@ -88,26 +88,6 @@ app.post(
     } catch (err) {
       console.log(err)
     }
-
-    return
-    const signer = new AsymmetricKeySigner({
-      privateKey: process.env.DFNS_PRIVATE_KEY!,
-      credId: process.env.DFNS_CRED_ID!,
-      appOrigin: process.env.DFNS_APP_ORIGIN!,
-    })
-
-    const dfnsApi = new DfnsApiClient({
-      appId: process.env.DFNS_APP_ID!,
-      authToken: process.env.DFNS_AUTH_TOKEN!,
-      baseUrl: process.env.DFNS_API_URL!,
-      signer,
-    })
-
-    const wallet = await dfnsApi.wallets.createWallet({ body: { network: BlockchainNetwork.ETH_GOERLI } })
-    console.log(JSON.stringify(wallet))
-
-    const list = await dfnsApi.wallets.listWallets({})
-    console.log(JSON.stringify(list))
   })
 )
 
@@ -201,6 +181,26 @@ app.post('/wallets/new/init', async (req: Request, res: Response) => {
   })
 })
 
+app.post(
+  '/wallets/new/complete',
+  asyncHandler(async (req: Request, res: Response) => {
+    // use the original request body and the signed challenge to complete the action
+
+    try {
+      const { requestBody, signedChallenge } = req.body
+
+      await delegatedClient(req.cookies.DFNS_AUTH_TOKEN).wallets.createWalletComplete(
+        { body: requestBody },
+        signedChallenge
+      )
+
+      res.status(204).end()
+    } catch (err) {
+      console.log(err)
+    }
+  })
+)
+
 app.post('/wallets/erc-tx', async (req: Request, res: Response) => {
   const { address } = req.body
   const walletId = 'wa-7v6u2-57qfi-8gca84e02i3givaq'
@@ -257,22 +257,6 @@ app.post('/wallets/erc/complete', async (req: Request, res: Response) => {
 
   res.send(trx)
 })
-
-app.post(
-  '/wallets/new/complete',
-  asyncHandler(async (req: Request, res: Response) => {
-    // use the original request body and the signed challenge to complete the action
-    const { requestBody, signedChallenge } = req.body
-    await delegatedClient(req.cookies.DFNS_AUTH_TOKEN).wallets.createWalletComplete(
-      { body: requestBody },
-      signedChallenge
-    )
-
-    // perform any local system updates with the DFNS response
-
-    res.status(204).end()
-  })
-)
 
 app.post(
   '/wallet/recover',
@@ -360,22 +344,20 @@ app.post(
       signedChallenge
     )
 
-    const sigs = await delegatedClient(req.cookies.DFNS_AUTH_TOKEN).wallets.getSignature({
-      walletId: 'wa-4a5er-0ue3t-9l28e48vj4p7eklm',
-      signatureId: 'sg-3svsa-0gup4-8gqb58nihr3umpmq',
-    })
-
-    console.log(sigs)
-
-    // const sigs = await delegatedClient(req.cookies.DFNS_AUTH_TOKEN).wallets.listSignatures({
-    // walletId: trx.walletId,
-    // })
-
-    res.status(204).end()
+    const sigs = await delegatedClient(req.cookies.DFNS_AUTH_TOKEN)
+      .wallets.getSignature({
+        walletId: 'wa-4a5er-0ue3t-9l28e48vj4p7eklm',
+        signatureId: 'sg-3svsa-0gup4-8gqb58nihr3umpmq',
+      })
+      .then((r) => {
+        console.log(r)
+        return res.status(204).send(r).end()
+      })
   })
 )
 
 const port = process.env.PORT
+
 app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at http://localhost:${port}`)
 })

@@ -60,7 +60,7 @@ export default function Home(): JSX.Element {
                 <tr key={wallet.id}>
                   <td>{wallet.network}</td>
                   <td>{wallet.address}</td>
-                  {/* <>{console.log(wallet.id)}</> */}
+                  <>{console.log(wallet.id)}</>
                 </tr>
               ))}
           </tbody>

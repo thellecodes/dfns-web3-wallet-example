@@ -99,6 +99,8 @@ export const api = {
       walletId: 'wa-4a5er-0ue3t-9l28e48vj4p7eklm',
     })
 
+    console.log(data)
+
     const webauthn = new WebAuthn({ rpId: process.env.REACT_APP_DFNS_WEBAUTHN_RPID! })
     const assertion = await webauthn.sign(challenge, allowCredentials)
 
